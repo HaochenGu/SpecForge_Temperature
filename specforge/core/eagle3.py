@@ -153,6 +153,7 @@ class OnlineEagle3Model(Eagle3Model):
         loss_mask: torch.Tensor,
         past_key_values: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
         position_ids: Optional[torch.Tensor] = None,
+        temperature: float = 1.0,
     ) -> Tuple[List[torch.Tensor], List[torch.Tensor], List[torch.Tensor]]:
         """
         Online eagle model trainer, modified from: https://github.com/SafeAILab/EAGLE/blob/main/eagle/traineagle3/cnets.py#L711
@@ -266,7 +267,7 @@ class OnlineEagle3Model(Eagle3Model):
                 )
 
             # Step 5.6: calculate loss, in-place modifies logits!
-            loss = LogSoftmaxLoss.apply(logits, target_p, position_mask)
+            loss = LogSoftmaxLoss.apply(logits, target_p, position_mask, temperature)
             plosses.append(loss)
 
             if not is_last:
@@ -315,6 +316,7 @@ class OfflineEagle3Model(Eagle3Model):
         hidden_states,
         past_key_values: Optional[Tuple[torch.Tensor, torch.Tensor]] = None,
         position_ids: Optional[torch.Tensor] = None,
+        temperature: float = 1.0,
     ) -> Tuple[List[torch.Tensor], List[torch.Tensor], List[torch.Tensor]]:
         """
         Forward pass for the offline Eagle3 model.
@@ -431,7 +433,7 @@ class OfflineEagle3Model(Eagle3Model):
                 )
 
             # Step 5.6: calculate loss, in-place modifies logits!
-            loss = LogSoftmaxLoss.apply(logits, target_p, position_mask)
+            loss = LogSoftmaxLoss.apply(logits, target_p, position_mask, temperature)
             plosses.append(loss)
 
             if not is_last:
@@ -598,6 +600,7 @@ class QwenVLOnlineEagle3Model(Eagle3Model):
         position_ids: Optional[torch.Tensor] = None,
         pixel_values: Optional[torch.Tensor] = None,
         image_grid_thw: Optional[torch.Tensor] = None,
+        temperature: float = 1.0,
     ) -> Tuple[List[torch.Tensor], List[torch.Tensor], List[torch.Tensor]]:
         """
         Online eagle model trainer, modified from: https://github.com/SafeAILab/EAGLE/blob/main/eagle/traineagle3/cnets.py#L711
@@ -729,7 +732,7 @@ class QwenVLOnlineEagle3Model(Eagle3Model):
                 )
 
             # Step 5.6: calculate loss, in-place modifies logits!
-            loss = LogSoftmaxLoss.apply(logits, target_p, position_mask)
+            loss = LogSoftmaxLoss.apply(logits, target_p, position_mask, temperature)
             plosses.append(loss)
 
             if not is_last:
