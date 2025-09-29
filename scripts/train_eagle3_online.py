@@ -192,6 +192,9 @@ def parse_args():
     parser.add_argument("--profile-num-steps", type=int, default=4)
     parser.add_argument("--profile-record-shapes", action="store_true")
 
+    parser.add_argument("--train-temperature", type=float, default=1)
+    parser.add_argument("--eval-temperature", type=float, default=1)
+
     args = parser.parse_args()
 
     return parser, args
@@ -512,12 +515,14 @@ def main():
                     loss_mask=data["loss_mask"].cuda(),
                     pixel_values=data["pixel_values"].cuda(),
                     image_grid_thw=data["image_grid_thw"].cuda(),
+                    temperature=args.train_temperature
                 )
             else:
                 plosses, _, acces = eagle3_model(
                     input_ids=data["input_ids"].cuda(),
                     attention_mask=data["attention_mask"].cuda(),
                     loss_mask=data["loss_mask"].cuda(),
+                    temperature=args.train_temperature
                 )
             acces = torch.stack(acces).cpu().tolist()
 
@@ -596,6 +601,7 @@ def main():
                             loss_mask=data["loss_mask"].cuda(),
                             pixel_values=data["pixel_values"].cuda(),
                             image_grid_thw=data["image_grid_thw"].cuda(),
+                            temperature=args.eval_temperature
                         )
                 else:
                     with torch.no_grad():
@@ -603,6 +609,7 @@ def main():
                             input_ids=data["input_ids"].cuda(),
                             attention_mask=data["attention_mask"].cuda(),
                             loss_mask=data["loss_mask"].cuda(),
+                            temperature=args.eval_temperature
                         )
                 acces = torch.stack(acces).cpu().tolist()
 
