@@ -175,6 +175,9 @@ def parse_args():
     parser.add_argument("--profile-num-steps", type=int, default=4)
     parser.add_argument("--profile-record-shapes", action="store_true")
 
+    parser.add_argument("--train-temperature", type=float, default=1)
+    parser.add_argument("--eval-temperature", type=float, default=1)
+
     args = parser.parse_args()
 
     return parser, args
@@ -416,6 +419,7 @@ def main():
                 .cuda(),  # [B, S, 1] This is different from the online version
                 hidden_states=data["hidden_state"].cuda(),  # [B, S, D]
                 target=data["target"].cuda(),  # [B, S, D*3]
+                temperature=args.train_temperature
             )
             acces = torch.stack(acces).cpu().tolist()
 
@@ -494,6 +498,7 @@ def main():
                         loss_mask=data["loss_mask"].unsqueeze(-1).cuda(),
                         hidden_states=data["hidden_state"].cuda(),
                         target=data["target"].cuda(),
+                        temperature=args.eval_temperature
                     )
                 acces = torch.stack(acces).cpu().tolist()
                 eval_acces = [eval_acces[i] + [acces[i]] for i in range(len(acces))]
