@@ -167,10 +167,18 @@ def log_softmax_backward_kernel(
 
 class LogSoftmaxLoss(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, logits, target, position_mask):
+    def forward(ctx, logits, target, position_mask, temperature: float = 1.0):
+        # Validate temperature
+        if not isinstance(temperature, (float, int)) or float(temperature) <= 0.0:
+            raise ValueError(f"temperature must be a positive scalar, got {temperature}")
+
         B, T, V = logits.shape
         loss = torch.zeros((B * T, 1), device=logits.device)
-        logits_flat = logits.contiguous().view(B * T, V)
+
+        # Apply temperature scaling to logits for forward loss computation
+        scaled_logits = logits / float(temperature)
+
+        logits_flat = scaled_logits.contiguous().view(B * T, V)
         target_flat = target.contiguous().view(B * T, V)
         position_mask_flat = position_mask.contiguous().view(B * T, 1).bool()
         grid = (B * T,)
@@ -192,14 +200,18 @@ class LogSoftmaxLoss(torch.autograd.Function):
             BLOCK_SIZE=BLOCK_SIZE,
             num_warps=num_warps,
         )
-        ctx.save_for_backward(logits.detach(), target, position_mask, m, d)
+        # Save scaled logits and temperature for backward
+        ctx.save_for_backward(scaled_logits.detach(), target, position_mask, m, d)
+        ctx.temperature = float(temperature)
         return loss.squeeze(1).mean()
 
     @staticmethod
     def backward(ctx, grad_output):
         logits, target, position_mask, m, d = ctx.saved_tensors
         B, T, V = logits.shape
-        scaling_factor = 1.0 / (B * T)
+        # Chain rule: d/dx = (1/T) * d/dz, where z = x / T
+        temperature = getattr(ctx, "temperature", 1.0)
+        scaling_factor = (1.0 / (B * T)) * (1.0 / float(temperature))
         logits = logits.contiguous().view(B * T, V)
         target = target.contiguous().view(B * T, V)
         position_mask = position_mask.contiguous().view(B * T, 1).bool()
@@ -220,7 +232,14 @@ class LogSoftmaxLoss(torch.autograd.Function):
             num_warps=num_warps,
         )
         logits = logits.view(B, T, V)
-        return logits, None, None, None, None
+        # Return gradients matching the number of forward inputs actually provided
+        n_inputs = len(ctx.needs_input_grad)
+        if n_inputs == 3:
+            # grads for: logits, target, position_mask
+            return logits, None, None
+        else:
+            # grads for: logits, target, position_mask, temperature
+            return logits, None, None, None
 
 
 if __name__ == "__main__":
