@@ -6,7 +6,7 @@ export TORCHINDUCTOR_CACHE_DIR=$ROOT_DIR/cache/compiled_kernels
 NUM_GPUS=${1:-8}
 
 # space-separated list or pass via TEMPERATURES env var
-TEMPERATURES=${TEMPERATURES:-"0.7 1.0 1.3"}
+TEMPERATURES=${TEMPERATURES:-"0.5 0.7 1.0 1.3 1.5 2.0"}
 
 for T in $TEMPERATURES; do
 OUTPUT_DIR="$ROOT_DIR/outputs/llama3-8b-eagle3/temp-${T}"
